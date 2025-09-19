@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 class Vehicle:
@@ -119,22 +119,120 @@ class Vehicle:
 
 
 
-    def realizar_manutencao(data_manutencao: Optional[datetime] = None): 
+    def realizar_manutencao(self, data_manutencao: Optional[datetime] = None): 
 
         """ Realiza a manutenção do veículo """
 
-        if data_manutencao is not None:
+        if data_manutencao is None:
             data_manutencao = datetime.now()
 
+        if self.tipo_manutencao == "odometro":
+
+            self.km_ultima_manutencao = self.odometro or 0
+            
+
+        elif self.tipo_manutencao == "horimetro":
+
+            self.horimetro_ultima_manutencao = self.horimetro or 0
+            
         
-        pass
+        self.ultima_manutencao = data_manutencao
 
 
-    def data_proxima_manutencao():
+        print(f"Veículo {self.frota}: manutenção realizada em {data_manutencao}")
+        print(f"Veículo {self.frota} realizou a manutenção com {self.km_ultima_manutencao} km")
+        print(f"Veículo {self.frota} realizou a manutenção com {self.horimetro_ultima_manutencao} horas")
+
+
+
+        
+        
+
+
+    def data_proxima_manutencao(self):
 
         """ Retorna a data da próxima manutenção """
 
-        pass
+        if self.ultima_manutencao is None:
+            return "Não existem dados da última manutenção"
+
+        
+        hoje = datetime.now()
+        dias_desde_ultima_manutencao = (hoje - self.ultima_manutencao).days
+
+        if dias_desde_ultima_manutencao <= 0:
+            return "A manutenção ja foi realizada"
+
+        if self.tipo_manutencao == "odometro":
+            return self._calcular_data_odometro(dias_desde_ultima_manutencao) # Criei um método auxiliar para calcular a data da próxima manutenção
+        
+        elif self.tipo_manutencao == "horimetro":
+            return self._calcular_data_horimetro(dias_desde_ultima_manutencao) # Criei um método auxiliar para calcular a data da próxima manutenção
+
+
+        """ CRIAÇÃO DOS MÉTODOS AUXILIARES """
+
+
+    def _calcular_data_odometro(self, dias_desde_ultima_manutencao: int):
+
+        # Quantos km desde a última manutenção
+        km_atual = self.odometro or 0
+        km_rodado = km_atual - self.km_ultima_manutencao 
+
+        if km_rodado <= 0:
+            return "Diferença de km é negativa ou igual a 0"
+
+            # Cálculo da média
+        km_por_dia = km_rodado / dias_desde_ultima_manutencao
+
+
+        if km_por_dia <= 0:
+            return "Média de km é negativa ou igual a 0"
+            
+        km_proxima_manutencao = self.km_ultima_manutencao + self.intervalo_manutencao_km
+        km_restantes = km_proxima_manutencao - km_atual
+
+        if km_restantes <= 0:
+            return datetime.now()
+            
+            # Cálculo de quantos dias para atingir os km necessários
+        dias_restantes = km_restantes / km_por_dia
+
+        data_prevista = datetime.now() + timedelta(days = int(dias_restantes))
+
+        return data_prevista   
+     
+        
+    def _calcular_data_horimetro(self, dias_desde_ultima_manutencao: int):
+
+        # Quantas horas desde a última manutenção
+        horimetro_atual = self.horimetro or 0
+        horimetro_rodado = horimetro_atual - self.horimetro_ultima_manutencao
+
+
+        if horimetro_rodado <=0:
+            return "Diferença de horimetro é negativa ou igual a 0"
+            
+        horas_por_dia = horimetro_rodado / dias_desde_ultima_manutencao
+
+        if horas_por_dia <= 0:
+            return "Média de horas é negativa ou igual a 0"
+
+        horas_proxima_manutencao = self.horimetro_ultima_manutencao + self.intervalo_manutencao_horimetro
+        horas_restantes = horas_proxima_manutencao - horimetro_atual
+
+        if horas_restantes <= 0:
+            return datetime.now()
+
+        dias_restantes = horas_restantes / horas_por_dia
+        data_prevista = datetime.now() + timedelta(days = int(dias_restantes))
+
+        return data_prevista
+
+            
+
+
+
 
 
 
@@ -168,8 +266,21 @@ class Vehicle:
 
     def get_maintenance_status(self) -> str:
         """ Retorna: OK, ALERTA, URGENTE, ATRASADO """
-        pass
 
+
+        if self.needs_maintenance():
+            return "URGENTE"
+        
+        elif self.needs_alert():
+            return "ALERTA"
+        
+        else:
+            return "Dentro do prazo"
+
+
+
+
+        
 
     def get_days_since_last_maintenance(self) -> Optional[int]:
 
@@ -185,12 +296,21 @@ class Vehicle:
 
 
 
-bs2001 = Vehicle(frota="BS2001", descricao = "Compactador", 
-                 modelo="Mercedes-Benz",categoria = "VW", odometro=90000, horimetro=752, 
-                 km_ultima_manutencao=59000, horimetro_ultima_manutencao = 598,  tipo_manutencao="horimetro")
+# ✅ VERSÃO CORRIGIDA:
+bs2001 = Vehicle(
+    frota="BS2001", 
+    descricao="Compactador", 
+    data=datetime(2025, 9, 19),
+    modelo="Mercedes-Benz",
+    categoria="VW", 
+    odometro=90000, 
+    horimetro=752, 
+    km_ultima_manutencao=59000, 
+    horimetro_ultima_manutencao=598,  
+    tipo_manutencao="horimetro", 
+    ultima_manutencao=datetime(2025, 5, 10)
+)
 
-
-
-print(bs2001.categoria)
-
-
+# Testar
+resultado = bs2001.data_proxima_manutencao()
+print(resultado)
